@@ -1,0 +1,13 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"id":	"e3c40527-98bd-4022-ac93-20bb115cfb25",
+	"author":	"Kral Ferch",
+	"description":	{
+		"":	""
+	},
+	"version":	"0.1",
+	"runOnStartup":	false,
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}
