@@ -102,6 +102,7 @@ def drawKeyboardPlate(keyboardLayout):
         alreadyExists = False
         for occ in root.allOccurrences:
             if occ.component.name == 'cherry mx plate hole':
+                cherryMxPlateHoleOcc = occ
                 alreadyExists = True
 
         if not alreadyExists:
@@ -113,15 +114,18 @@ def drawKeyboardPlate(keyboardLayout):
                     break
 
             if cherryMxPlateHoleFile:
-                occ = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
+                cherryMxPlateHoleOcc = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
 
-        # Get the active sketch. 
-        # app = adsk.core.Application.get()
-        # sketch = adsk.fusion.Sketch.cast(app.activeEditObject)
+        plateName = 'keyboard plate'
+        if len(keyboardLayout) and type(keyboardLayout[0]) is dict and 'name' in keyboardLayout[0]:
+            plateName = keyboardLayout[0]['name']
+        plateOcc = root.occurrences.addNewComponent(adsk.core.Matrix3D.create())
+        plateOcc.component.name = plateName
+        plateSketch = plateOcc.component.sketches.add(root.xYConstructionPlane)
+        plateSketch.name = plateName
+
         # sketch.isComputeDeferred = True
-
         # # interpret the layout and place plate holes!
-        
         # sketch.isComputeDeferred = False
 
     except:
