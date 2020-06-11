@@ -6,11 +6,14 @@ import json
 # This is only needed with Python.
 handlers = []
 
+app = adsk.core.Application.cast(None)
+ui  = adsk.core.UserInterface.cast(None)
+
 def run(context):
-    ui = None
     try:
+        global app, ui
         app = adsk.core.Application.get()
-        ui  = app.userInterface
+        ui = app.userInterface
 
         # Get the CommandDefinitions collection.
         cmdDefs = ui.commandDefinitions
@@ -41,21 +44,19 @@ class SampleCommandCreatedEventHandler(adsk.core.CommandCreatedEventHandler):
     def __init__(self):
         super().__init__()
     def notify(self, args):
-        eventArgs = adsk.core.CommandCreatedEventArgs.cast(args)
-        
-        # Get the command
+        eventArgs = adsk.core.CommandCreatedEventArgs.cast(args)        
         cmd = eventArgs.command
-
-        # Get the CommandInputs collection to create new command inputs.            
         inputs = cmd.commandInputs
 
-        # Create a string input to get the kle JSON.
         klejson = inputs.addTextBoxCommandInput('klejson', 'kle JSON', '', 5, False)
 
-        # Connect to the execute event.
         onExecute = SampleCommandExecuteHandler()
         cmd.execute.add(onExecute)
         handlers.append(onExecute)
+
+        onValidate = ValidateInputs()
+        cmd.validateInputs.add(onValidate)
+        handlers.append(onValidate)
 
 
 # Event handler for the execute event.
@@ -79,44 +80,54 @@ class SampleCommandExecuteHandler(adsk.core.CommandEventHandler):
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
-# Event handler for the validateInputs event.
-class SampleCommandValidateInputsHandler(adsk.core.ValidateInputsEventHandler):
+
+class ValidateInputs(adsk.core.ValidateInputsEventHandler):
     def __init__(self):
         super().__init__()
     def notify(self, args):
-        eventArgs = adsk.core.ValidateInputsEventArgs.cast(args)
-        inputs = eventArgs.firingEvent.sender.commandInputs
+        try:
+            eventArgs = adsk.core.ValidateInputsEventArgs.cast(args)
+            inputs = eventArgs.firingEvent.sender.commandInputs
 
-        # Check to see if the check box is checked or not.
-        # klejson = inputs.itemById('klejson').valueOne        
-        # _ui.messageBox('hi')
-        
-        # if klejson.value == True:
-        #     eventArgs.isValid = True
-        # else:
-        #     # Verify that the scale is greater than 0.1.
-        #     scaleInput = inputs.itemById('heightScale')
-        #     if scaleInput.value < .1:
-        #         eventArgs.areInputsValid = False
-        #     else:
-        #         eventArgs.areInputsValid = True
+            klejson = inputs.itemById('klejson').text        
+            if len(klejson) > 0:
+                eventArgs.areInputsValid = True
+            else:
+                eventArgs.areInputsValid = False
+
+        except:
+            if ui:
+                ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))	
+
 
 def drawKeyboardPlate(keyboardLayout):
-    # Get the active sketch. 
-    app = adsk.core.Application.get()
-    sketch = adsk.fusion.Sketch.cast(app.activeEditObject)
-    sketch.isComputeDeferred = True
+    try:
+        project = app.data.activeProject
+        cherryMxPlateHoleFile = None
+        for file in project.rootFolder.dataFiles:
+            if file.name == 'cherry mx plate hole':
+                cherryMxPlateHoleFile = file
+                break
 
-    # interpret the layout and place plate holes!
-    
-    sketch.isComputeDeferred = False
+        des = adsk.fusion.Design.cast(app.activeProduct)
+        root = des.rootComponent
+        occ = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
+
+        # Get the active sketch. 
+        app = adsk.core.Application.get()
+        sketch = adsk.fusion.Sketch.cast(app.activeEditObject)
+        sketch.isComputeDeferred = True
+
+        # interpret the layout and place plate holes!
+        
+        sketch.isComputeDeferred = False
+
+    except:
+        if ui:
+            ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))	
 
 def stop(context):
     try:
-        app = adsk.core.Application.get()
-        ui  = app.userInterface
-        
-        # Clean up the UI.
         cmdDef = ui.commandDefinitions.itemById('klejson_button')
         if cmdDef:
             cmdDef.deleteMe()
