@@ -96,16 +96,24 @@ def drawKeyboardPlate(keyboardLayout):
     global app, ui
 
     try:
-        project = app.data.activeProject
-        cherryMxPlateHoleFile = None
-        for file in project.rootFolder.dataFiles:
-            if file.name == 'cherry mx plate hole':
-                cherryMxPlateHoleFile = file
-                break
+        design = adsk.fusion.Design.cast(app.activeProduct)
+        root = design.rootComponent
 
-        des = adsk.fusion.Design.cast(app.activeProduct)
-        root = des.rootComponent
-        occ = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
+        alreadyExists = False
+        for occ in root.allOccurrences:
+            if occ.component.name == 'cherry mx plate hole':
+                alreadyExists = True
+
+        if not alreadyExists:
+            project = app.data.activeProject
+            cherryMxPlateHoleFile = None
+            for file in project.rootFolder.dataFiles:
+                if file.name == 'cherry mx plate hole':
+                    cherryMxPlateHoleFile = file
+                    break
+
+            if cherryMxPlateHoleFile:
+                occ = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
 
         # Get the active sketch. 
         # app = adsk.core.Application.get()
