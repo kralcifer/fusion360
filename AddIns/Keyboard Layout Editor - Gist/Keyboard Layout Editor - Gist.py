@@ -97,6 +97,9 @@ def drawKeyboardPlate(keyboardLayout):
 
     try:
         design = adsk.fusion.Design.cast(app.activeProduct)
+        unitsMgr = design.fusionUnitsManager
+        unitsMgr.distanceDisplayUnits = adsk.fusion.DistanceUnits.MillimeterDistanceUnits
+
         root = design.rootComponent
 
         alreadyExists = False
@@ -124,6 +127,29 @@ def drawKeyboardPlate(keyboardLayout):
         plateSketch = plateOcc.component.sketches.add(root.xYConstructionPlane)
         plateSketch.name = plateName
 
+        topLeft = adsk.core.Point3D.create(0, 0, 0)
+        bottomRight = adsk.core.Point3D.create(50, 20, 0)
+        plateSketch.sketchCurves.sketchLines.addTwoPointRectangle(topLeft, bottomRight)        
+
+        # cherryProfile = cherryMxPlateHoleOcc.component.sketch.profiles[0]
+        # cherryProfile.
+
+        cherrySketch = cherryMxPlateHoleOcc.component.sketches[0]
+        matrix = adsk.core.Matrix3D.create()
+        vector = adsk.core.Vector3D.create(3, 15)
+        matrix.translation = vector
+
+        collection = adsk.core.ObjectCollection.create()
+        for line in cherrySketch.sketchCurves.sketchLines:   
+            # for constraint in line.geometricConstraints:
+            #     constraint.deleteMe()         
+            collection.add(line)
+        
+        cherrySketch.copy(collection, matrix, plateSketch)
+
+        # newOcc = plateOcc.component.occurrences.addExistingComponent(cherryMxPlateHoleOcc.component, trans)
+        # plateSketch.copy(sketchEntities, transform, targetSketch)
+
         # sketch.isComputeDeferred = True
         # # interpret the layout and place plate holes!
         # sketch.isComputeDeferred = False
@@ -145,3 +171,33 @@ def stop(context):
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))	
+
+        # # Get Sketch All Entitys
+        # sktEntitys = adsk.core.ObjectCollection.create()
+        # [sktEntitys.add(c) for c in sketch.sketchCurves]
+        # [sktEntitys.add(p) for p in sketch.sketchPoints]
+
+        # # get Rotatione matrix
+        # angRad = radians(TwistAngle)
+        # rotationAxis = adsk.core.Vector3D.create(0,0,1)
+        # rotationCenter = sktCenterPnt.geometry.copy()
+        # rotationMat = adsk.core.Matrix3D.create()
+        # rotationMat.setToRotation(angRad, rotationAxis, rotationCenter)
+
+        # # get Move matrix
+        # ori = origin.copy()
+        # sktmat = sketch.transform
+        # sktmat.invert()
+        # ori.transformBy(sktmat)
+        # centerGeo = sktCenterPnt.geometry
+        # vecMove = centerGeo.vectorTo(ori)
+        # moveMat = adsk.core.Matrix3D.create()
+        # moveMat.translation = vecMove
+
+        # # Execute Rotatione&Move
+        # mat3d = rotationMat.copy()
+        # mat3d.transformBy(moveMat)
+        # sketch.move(sktEntitys, mat3d)
+        # sketch.isComputeDeferred = False
+
+        # sketch.name=f'{airfoilName}_{Offset}'
