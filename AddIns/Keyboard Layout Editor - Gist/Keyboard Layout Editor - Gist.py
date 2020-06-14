@@ -96,24 +96,51 @@ def drawKeyboardPlate(keyboardLayout):
     global app, ui
 
     try:
-        project = app.data.activeProject
-        cherryMxPlateHoleFile = None
-        for file in project.rootFolder.dataFiles:
-            if file.name == 'cherry mx plate hole':
-                cherryMxPlateHoleFile = file
-                break
+        design = adsk.fusion.Design.cast(app.activeProduct)
+        root = design.rootComponent
 
-        des = adsk.fusion.Design.cast(app.activeProduct)
-        root = des.rootComponent
-        occ = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
+        alreadyExists = False
+        for occ in root.allOccurrences:
+            if occ.component.name == 'cherry mx plate hole':
+                cherryMxPlateHoleOcc = occ
+                alreadyExists = True
 
-        # Get the active sketch. 
-        # app = adsk.core.Application.get()
-        # sketch = adsk.fusion.Sketch.cast(app.activeEditObject)
-        # sketch.isComputeDeferred = True
+        if not alreadyExists:
+            project = app.data.activeProject
+            cherryMxPlateHoleFile = None
+            for file in project.rootFolder.dataFiles:
+                if file.name == 'cherry mx plate hole':
+                    cherryMxPlateHoleFile = file
+                    break
 
-        # # interpret the layout and place plate holes!
+            if cherryMxPlateHoleFile:
+                cherryMxPlateHoleOcc = root.occurrences.addByInsert(cherryMxPlateHoleFile, adsk.core.Matrix3D.create(), True)            
+
+        plateName = 'keyboard plate'
+        if len(keyboardLayout) and type(keyboardLayout[0]) is dict and 'name' in keyboardLayout[0]:
+            plateName = keyboardLayout[0]['name']
+        plateOcc = root.occurrences.addNewComponent(adsk.core.Matrix3D.create())
+        plateOcc.component.name = plateName
+        plateSketch = plateOcc.component.sketches.add(root.xYConstructionPlane)
+        plateSketch.name = plateName
+
+        topLeft = adsk.core.Point3D.create(0, 0, 0)
+        bottomRight = adsk.core.Point3D.create(50, 20, 0)
+        plateSketch.sketchCurves.sketchLines.addTwoPointRectangle(topLeft, bottomRight)        
+
+        cherrySketch = cherryMxPlateHoleOcc.component.sketches[0]
+        matrix = adsk.core.Matrix3D.create()
+        vector = adsk.core.Vector3D.create(3, 15)
+        matrix.translation = vector
+
+        collection = adsk.core.ObjectCollection.create()
+        for line in cherrySketch.sketchCurves.sketchLines:   
+            collection.add(line)
         
+        cherrySketch.copy(collection, matrix, plateSketch)
+
+        # sketch.isComputeDeferred = True
+        # # interpret the layout and place plate holes!
         # sketch.isComputeDeferred = False
 
     except:
